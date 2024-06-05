@@ -1,5 +1,6 @@
 import pygame
 import sys
+import random
 
 # ゲームの初期設定
 pygame.init()
@@ -38,6 +39,10 @@ attack_cooldown = 500  # ミリ秒
 last_attack_time_player1 = 0
 last_attack_time_player2 = 0
 
+# CPUのジャンプタイミング
+cpu_jump_cooldown = random.randint(2000, 5000)
+last_jump_time_cpu = pygame.time.get_ticks()
+
 # ゲームのメインループ
 clock = pygame.time.Clock()
 running = True
@@ -58,15 +63,6 @@ while running:
         player1_velocity_y = jump_strength
         player1_on_ground = False
 
-    # プレイヤー2の操作
-    if keys[pygame.K_LEFT]:
-        player2.x -= player2_speed
-    if keys[pygame.K_RIGHT]:
-        player2.x += player2_speed
-    if keys[pygame.K_UP] and player2_on_ground:
-        player2_velocity_y = jump_strength
-        player2_on_ground = False
-
     current_time = pygame.time.get_ticks()
 
     # プレイヤー1の攻撃
@@ -74,33 +70,43 @@ while running:
         if current_time - last_attack_time_player1 > attack_cooldown:
             attack_rect = pygame.Rect(player1.right, player1.y + 20, 20, 20)
             if attack_rect.colliderect(player2):
-                if not keys[pygame.K_RSHIFT]:  # プレイヤー2が防御していない場合
-                    player2_health -= 10
+                player2_health -= 10
             last_attack_time_player1 = current_time
 
     if keys[pygame.K_f]:  # キック攻撃
         if current_time - last_attack_time_player1 > attack_cooldown:
             attack_rect = pygame.Rect(player1.right, player1.y + 50, 30, 20)
             if attack_rect.colliderect(player2):
-                if not keys[pygame.K_RSHIFT]:  # プレイヤー2が防御していない場合
-                    player2_health -= 15
+                player2_health -= 15
             last_attack_time_player1 = current_time
 
-    # プレイヤー2の攻撃
-    if keys[pygame.K_RETURN]:  # パンチ攻撃
+    # CPUの操作
+    if current_time - last_jump_time_cpu > cpu_jump_cooldown:
+        if player2_on_ground:
+            player2_velocity_y = jump_strength
+            player2_on_ground = False
+        last_jump_time_cpu = current_time
+        cpu_jump_cooldown = random.randint(2000, 5000)
+
+    # プレイヤー1に向かって移動
+    if player2.x < player1.x:
+        player2.x += player2_speed
+    elif player2.x > player1.x:
+        player2.x -= player2_speed
+
+    # 一定の確率で攻撃
+    if random.randint(0, 100) < 5:
         if current_time - last_attack_time_player2 > attack_cooldown:
             attack_rect = pygame.Rect(player2.left - 20, player2.y + 20, 20, 20)
             if attack_rect.colliderect(player1):
-                if not keys[pygame.K_LSHIFT]:  # プレイヤー1が防御していない場合
-                    player1_health -= 10
+                player1_health -= 10
             last_attack_time_player2 = current_time
 
-    if keys[pygame.K_SLASH]:  # キック攻撃
+    if random.randint(0, 100) < 5:
         if current_time - last_attack_time_player2 > attack_cooldown:
             attack_rect = pygame.Rect(player2.left - 30, player2.y + 50, 30, 20)
             if attack_rect.colliderect(player1):
-                if not keys[pygame.K_LSHIFT]:  # プレイヤー1が防御していない場合
-                    player1_health -= 15
+                player1_health -= 15
             last_attack_time_player2 = current_time
 
     # 重力の適用
@@ -130,12 +136,6 @@ while running:
     pygame.draw.rect(screen, RED, player1)
     pygame.draw.rect(screen, BLUE, player2)
     pygame.draw.rect(screen, BLACK, ground)
-
-    # 防御の描画
-    if keys[pygame.K_LSHIFT]:
-        pygame.draw.rect(screen, GRAY, (player1.x - 10, player1.y, 10, 100))
-    if keys[pygame.K_RSHIFT]:
-        pygame.draw.rect(screen, GRAY, (player2.x + player2.width, player2.y, 10, 100))
 
     # ヘルスバーの描画
     pygame.draw.rect(screen, RED, (10, 10, player1_health * 2, 20))
