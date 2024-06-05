@@ -81,33 +81,42 @@ while running:
             last_attack_time_player1 = current_time
 
     # CPUの操作
+    # プレイヤー1との距離を計算
+    distance_to_player1 = player1.x - player2.x
+
+    # 攻撃のヒットボックス
+    attack_rect = pygame.Rect(player2.left - 20, player2.y + 20, 20, 20)
+
+    # CPUのジャンプ
     if current_time - last_jump_time_cpu > cpu_jump_cooldown:
-        if player2_on_ground:
+        if player2_on_ground and abs(distance_to_player1) < 100:
             player2_velocity_y = jump_strength
             player2_on_ground = False
         last_jump_time_cpu = current_time
         cpu_jump_cooldown = random.randint(2000, 5000)
 
     # プレイヤー1に向かって移動
-    if player2.x < player1.x:
+    if distance_to_player1 > 100:
         player2.x += player2_speed
-    elif player2.x > player1.x:
+    elif distance_to_player1 < -100:
         player2.x -= player2_speed
-
-    # 一定の確率で攻撃
-    if random.randint(0, 100) < 5:
-        if current_time - last_attack_time_player2 > attack_cooldown:
-            attack_rect = pygame.Rect(player2.left - 20, player2.y + 20, 20, 20)
-            if attack_rect.colliderect(player1):
-                player1_health -= 10
-            last_attack_time_player2 = current_time
-
-    if random.randint(0, 100) < 5:
-        if current_time - last_attack_time_player2 > attack_cooldown:
-            attack_rect = pygame.Rect(player2.left - 30, player2.y + 50, 30, 20)
-            if attack_rect.colliderect(player1):
-                player1_health -= 15
-            last_attack_time_player2 = current_time
+    else:
+        # プレイヤー1が近い場合、防御または攻撃
+        if random.randint(0, 100) < 30:  # 30%の確率で防御
+            if random.randint(0, 1) == 0:
+                pygame.draw.rect(screen, GRAY, (player2.x + player2.width, player2.y, 10, 100))
+        else:
+            if random.randint(0, 1) == 0:  # パンチ攻撃
+                if current_time - last_attack_time_player2 > attack_cooldown:
+                    if attack_rect.colliderect(player1):
+                        player1_health -= 10
+                    last_attack_time_player2 = current_time
+            else:  # キック攻撃
+                if current_time - last_attack_time_player2 > attack_cooldown:
+                    attack_rect = pygame.Rect(player2.left - 30, player2.y + 50, 30, 20)
+                    if attack_rect.colliderect(player1):
+                        player1_health -= 15
+                    last_attack_time_player2 = current_time
 
     # 重力の適用
     player1_velocity_y += gravity
